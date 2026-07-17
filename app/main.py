@@ -21,6 +21,18 @@ app = FastAPI(
     description="Production-ready Python backend for FIFA World Cup 2026 stadium operations and fan experience",
     version="1.0.0"
 )
+@app.get("/")
+async def root():
+    """
+    Root endpoint offering a welcome message and redirect coordinates 
+    to the interactive API documentation.
+    """
+    return {
+        "status": "Vanguard Arena OS is fully operational",
+        "tournament": "FIFA World Cup 2026™ Stadium Operations AI Support",
+        "interactive_docs": "/docs",
+        "system_engine": "Gemini 1.5 Flash (Async Mode)"
+    }
 
 # Robust CORS middleware configuration
 app.add_middleware(
