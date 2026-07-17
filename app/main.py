@@ -1,3 +1,5 @@
+from fastapi import FastAPI  # ... and whatever else you have there
+from fastapi.responses import RedirectResponse
 import json
 import logging
 import os
@@ -21,6 +23,9 @@ app = FastAPI(
     description="Production-ready Python backend for FIFA World Cup 2026 stadium operations and fan experience",
     version="1.0.0"
 )
+@app.get("/", include_in_schema=False)
+async def redirect_to_docs():
+    return RedirectResponse(url="/docs")
 @app.get("/")
 async def root():
     """
