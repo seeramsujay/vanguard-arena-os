@@ -26,7 +26,11 @@ app = FastAPI(
 @app.get("/", include_in_schema=False)
 async def redirect_to_docs():
     return RedirectResponse(url="/docs")
-@app.get("/")
+@app.get(
+    "/",
+    summary="System Health Check and Welcome",
+    description="Serves as the system health check and developer welcome route, providing status information and interactive API documentation references."
+)
 async def root():
     """
     Root endpoint offering a welcome message and redirect coordinates 
@@ -126,7 +130,10 @@ def generate_mock_response(request: OperationRequest) -> OperationResponse:
     "/api/v1/operations/analyze",
     response_model=OperationResponse,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_arena_token)]
+    dependencies=[Depends(verify_arena_token)],
+    summary="Analyze Live Stadium Telemetry",
+    description="Processes real-time stadium operational streams to categorize threats, generate coordination instructions, and extract barrier-free routing path parameters.",
+    response_description="A structured JSON response containing the calculated operational threat level, immediate action directives, and ADA-compliant pathways."
 )
 async def analyze_operation(request: OperationRequest):
     """

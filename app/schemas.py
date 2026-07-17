@@ -3,8 +3,15 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 class OperationRequest(BaseModel):
-    user_role: Literal["FAN", "ORGANIZER", "VOLUNTEER", "STAFF"]
-    telemetry_stream: str = Field(..., max_length=5000)
+    user_role: Literal["FAN", "ORGANIZER", "VOLUNTEER", "STAFF"] = Field(
+        ...,
+        description="The operational role of the requester, determining tailored recommendations and access constraints. Must be one of the permitted stadium roles: FAN, ORGANIZER, VOLUNTEER, or STAFF."
+    )
+    telemetry_stream: str = Field(
+        ...,
+        max_length=5000,
+        description="A stream of live telemetry data containing stadium operational metrics, crowd dynamics, incident details, or general queries. Used as input for security and threat analysis."
+    )
 
     @field_validator("telemetry_stream")
     @classmethod
@@ -34,6 +41,15 @@ class OperationRequest(BaseModel):
         return sanitized
 
 class OperationResponse(BaseModel):
-    alert_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
-    recommendation: str = Field(..., description="Tailored operational recommendation based on role and telemetry.")
-    accessibility_routing: str = Field(..., description="ADA routing details or standard accessibility route info.")
+    alert_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"] = Field(
+        ...,
+        description="Calculated operational threat level and threat classification representing the urgency of the detected stadium incident. Must be one of: LOW, MEDIUM, HIGH, or CRITICAL."
+    )
+    recommendation: str = Field(
+        ...,
+        description="Tailored operational instruction and coordination directives customized for the user's role and telemetry input to mitigate threats and guide response."
+    )
+    accessibility_routing: str = Field(
+        ...,
+        description="Barrier-free, ADA-compliant routing path details and navigation instructions for fans requiring special assistance, wheelchair access, or elevators."
+    )

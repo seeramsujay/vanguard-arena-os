@@ -116,3 +116,33 @@ def test_successful_routing_accessibility():
     data = response.json()
     assert data["alert_level"] == "MEDIUM"
     assert "elevator" in data["accessibility_routing"].lower()
+
+def test_openapi_metadata():
+    """
+    Test that the OpenAPI schema includes our added summary, description, and Field descriptions.
+    """
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
+    schema = response.json()
+    
+    # Verify GET / metadata
+    get_root = schema["paths"]["/"]["get"]
+    assert get_root["summary"] == "System Health Check and Welcome"
+    assert "health check" in get_root["description"].lower()
+    
+    # Verify POST /api/v1/operations/analyze metadata
+    post_analyze = schema["paths"]["/api/v1/operations/analyze"]["post"]
+    assert post_analyze["summary"] == "Analyze Live Stadium Telemetry"
+    assert "processes real-time" in post_analyze["description"].lower()
+    assert "structured json response" in post_analyze["responses"]["200"]["description"].lower()
+    
+    # Verify OperationRequest model fields
+    req_schema = schema["components"]["schemas"]["OperationRequest"]
+    assert "operational role of the requester" in req_schema["properties"]["user_role"]["description"].lower()
+    assert "live telemetry data" in req_schema["properties"]["telemetry_stream"]["description"].lower()
+    
+    # Verify OperationResponse model fields
+    res_schema = schema["components"]["schemas"]["OperationResponse"]
+    assert "threat level" in res_schema["properties"]["alert_level"]["description"].lower()
+    assert "tailored operational instruction" in res_schema["properties"]["recommendation"]["description"].lower()
+    assert "barrier-free, ada-compliant" in res_schema["properties"]["accessibility_routing"]["description"].lower()
