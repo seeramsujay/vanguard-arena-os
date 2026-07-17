@@ -1,10 +1,9 @@
-from fastapi import FastAPI  # ... and whatever else you have there
-from fastapi.responses import RedirectResponse
 import json
 import logging
 import os
 import re
 from fastapi import FastAPI, Header, HTTPException, Depends, status
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -24,14 +23,14 @@ app = FastAPI(
     version="1.0.0"
 )
 @app.get("/", include_in_schema=False)
-async def redirect_to_docs():
+async def redirect_to_docs() -> RedirectResponse:
     return RedirectResponse(url="/docs")
 @app.get(
     "/",
     summary="System Health Check and Welcome",
     description="Serves as the system health check and developer welcome route, providing status information and interactive API documentation references."
 )
-async def root():
+async def root() -> dict[str, str]:
     """
     Root endpoint offering a welcome message and redirect coordinates 
     to the interactive API documentation.
@@ -54,7 +53,7 @@ app.add_middleware(
 
 INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "fallback-secret-token")
 
-def verify_arena_token(x_arena_token: str = Header(None, alias="X-Arena-Token")):
+def verify_arena_token(x_arena_token: str | None = Header(None, alias="X-Arena-Token")) -> str:
     """
     Security check for incoming requests. Validates the API token from header.
     """
@@ -126,6 +125,8 @@ def generate_mock_response(request: OperationRequest) -> OperationResponse:
         accessibility_routing=accessibility_routing
     )
 
+_cached_model = None
+
 @app.post(
     "/api/v1/operations/analyze",
     response_model=OperationResponse,
@@ -135,7 +136,7 @@ def generate_mock_response(request: OperationRequest) -> OperationResponse:
     description="Processes real-time stadium operational streams to categorize threats, generate coordination instructions, and extract barrier-free routing path parameters.",
     response_description="A structured JSON response containing the calculated operational threat level, immediate action directives, and ADA-compliant pathways."
 )
-async def analyze_operation(request: OperationRequest):
+async def analyze_operation(request: OperationRequest) -> OperationResponse:
     """
     Analyzes stadium operations telemetry or user queries using Gemini 1.5 Flash asynchronously.
     Falls back to a structured mock response if the Gemini API Key is missing or invalid.
@@ -146,13 +147,14 @@ async def analyze_operation(request: OperationRequest):
         return generate_mock_response(request)
 
     try:
-        genai.configure(api_key=api_key)
-        
-        # Configure model asynchronously
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            system_instruction=STADIUM_COMMAND_SYSTEM_PROMPT
-        )
+        global _cached_model
+        if _cached_model is None:
+            genai.configure(api_key=api_key)
+            _cached_model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                system_instruction=STADIUM_COMMAND_SYSTEM_PROMPT
+            )
+        model = _cached_model
         
         prompt_content = f"User Role: {request.user_role}\nTelemetry Stream: {request.telemetry_stream}"
         

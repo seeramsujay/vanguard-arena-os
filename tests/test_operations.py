@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 from app.main import app, INTERNAL_API_TOKEN
 
@@ -146,3 +147,58 @@ def test_openapi_metadata():
     assert "threat level" in res_schema["properties"]["alert_level"]["description"].lower()
     assert "tailored operational instruction" in res_schema["properties"]["recommendation"]["description"].lower()
     assert "barrier-free, ada-compliant" in res_schema["properties"]["accessibility_routing"]["description"].lower()
+
+def test_redirect_to_docs():
+    """
+    Test that GET / with include_in_schema=False redirects to /docs.
+    """
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/docs"
+
+def test_gemini_api_call_success():
+    """
+    Test successful execution path through the Gemini API by mocking the async generate_content_async call.
+    """
+    mock_response = AsyncMock()
+    mock_response.text = '{"alert_level": "LOW", "recommendation": "Mocked Gemini recommendation", "accessibility_routing": "Mocked ADA route"}'
+    
+    with patch("google.generativeai.GenerativeModel.generate_content_async", new_callable=AsyncMock) as mock_generate, \
+         patch.dict("os.environ", {"GEMINI_API_KEY": "dummy-key"}):
+        mock_generate.return_value = mock_response
+        
+        response = client.post(
+            "/api/v1/operations/analyze",
+            headers={"X-Arena-Token": INTERNAL_API_TOKEN},
+            json={
+                "user_role": "FAN",
+                "telemetry_stream": "Everything looks calm."
+            }
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["alert_level"] == "LOW"
+        assert data["recommendation"] == "Mocked Gemini recommendation"
+        assert data["accessibility_routing"] == "Mocked ADA route"
+
+def test_gemini_api_call_failure_fallback():
+    """
+    Test that a failure in the Gemini API call is caught gracefully and falls back to mock response.
+    """
+    with patch("google.generativeai.GenerativeModel.generate_content_async", side_effect=Exception("API limit exceeded")), \
+         patch.dict("os.environ", {"GEMINI_API_KEY": "dummy-key"}):
+         
+        response = client.post(
+            "/api/v1/operations/analyze",
+            headers={"X-Arena-Token": INTERNAL_API_TOKEN},
+            json={
+                "user_role": "FAN",
+                "telemetry_stream": "Everything looks calm."
+            }
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["alert_level"] == "LOW"
+        assert "normal" in data["recommendation"].lower() or "welcome" in data["recommendation"].lower()
