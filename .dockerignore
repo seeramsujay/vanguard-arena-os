@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# Environment variables
+.env
+.env.example
+
+# Python virtual environment
+venv/
+ENV/
+env/
+
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Testing
+tests/
+
+# Docker configuration files
+Dockerfile
+.dockerignore

@@ -202,3 +202,13 @@ def test_gemini_api_call_failure_fallback():
         data = response.json()
         assert data["alert_level"] == "LOW"
         assert "normal" in data["recommendation"].lower() or "welcome" in data["recommendation"].lower()
+
+def test_serve_dashboard():
+    """
+    Test that GET /dashboard serves the HTML dashboard template.
+    """
+    response = client.get("/dashboard")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "Vanguard Arena OS" in response.text
+    assert "Telemetry Control Panel" in response.text

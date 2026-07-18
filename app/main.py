@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from fastapi import FastAPI, Header, HTTPException, Depends, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -41,6 +41,24 @@ async def root() -> dict[str, str]:
         "interactive_docs": "/docs",
         "system_engine": "Gemini 1.5 Flash (Async Mode)"
     }
+
+@app.get(
+    "/dashboard",
+    response_class=HTMLResponse,
+    summary="Interactive Telemetry Control Panel Dashboard",
+    description="Serves a premium, glassmorphic operator dashboard UI that allows live stream simulations, preset testing, and role-based action dispatches."
+)
+async def serve_dashboard() -> HTMLResponse:
+    """
+    Serves the dashboard UI HTML template.
+    """
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "dashboard.html")
+    try:
+        with open(template_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content, status_code=status.HTTP_200_OK)
+    except FileNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dashboard template not found")
 
 # Robust CORS middleware configuration
 app.add_middleware(
